@@ -1,0 +1,8 @@
+
+[
+  {
+    "origin": ["https://chat.openai.com"],
+    "method": ["GET"],
+    "maxAgeSeconds": 3600
+  }
+]

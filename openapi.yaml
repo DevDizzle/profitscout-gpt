@@ -1,0 +1,274 @@
+openapi: 3.1.0
+info:
+  title: "ProfitScout API"
+  version: "1.4.0"
+  description: "API for accessing ProfitScout datasets, including GCS-backed files and virtual datasets from BigQuery."
+servers:
+  - url: https://profitscout-api-2lshkth7qq-uc.a.run.app
+    description: Production server
+
+paths:
+  /v1:
+    get:
+      summary: "List available datasets"
+      tags:
+        - Datasets
+      responses:
+        "200":
+          description: "A list of available datasets."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatasetList"
+
+  /v1/options-signals:
+    get:
+      summary: "List distinct tickers for options signals"
+      tags:
+        - options-signals
+      parameters:
+        - name: run_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: "The run date (YYYY-MM-DD) to query. Defaults to the latest."
+        - name: ticker
+          in: query
+          schema:
+            type: string
+          description: "A ticker symbol to filter by (prefix match)."
+        - name: option_type
+          in: query
+          schema:
+            type: string
+            enum: ["CALL", "PUT"]
+          description: "Filter by option type."
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 100
+          description: "Maximum number of items to return."
+        - name: pageToken
+          in: query
+          schema:
+            type: string
+          description: "Token for the next page of results."
+      responses:
+        "200":
+          description: "A list of distinct tickers."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OptionsSignalTickerList"
+
+  /v1/options-signals/top:
+    get:
+      summary: "Get top-ranked options signals across all tickers"
+      tags:
+        - options-signals
+      parameters:
+        - name: as_of
+          in: query
+          schema:
+            type: string
+            default: "latest"
+          description: "A date (YYYY-MM-DD) or 'latest'."
+        - name: option_type
+          in: query
+          schema:
+            type: string
+            enum: ["CALL", "PUT"]
+          description: "Filter by option type."
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+          description: "Maximum number of signals to return."
+      responses:
+        "200":
+          description: "A list of top-ranked option signals."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OptionsSignalList"
+
+  /v1/options-signals/{ticker}:
+    get:
+      summary: "Get top options signals for a specific ticker"
+      tags:
+        - options-signals
+      parameters:
+        - name: ticker
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "The stock ticker symbol."
+        - name: as_of
+          in: query
+          schema:
+            type: string
+            default: "latest"
+          description: "A date (YYYY-MM-DD) or 'latest'."
+        - name: expiration_date
+          in: query
+          schema:
+            type: string
+            format: date
+          description: "Specific expiration date to query. If omitted, one is chosen 30-45 DTE."
+        - name: option_type
+          in: query
+          schema:
+            type: string
+            enum: ["CALL", "PUT", "ANY"]
+            default: "ANY"
+          description: "Filter by option type."
+        - name: top_n
+          in: query
+          schema:
+            type: integer
+            default: 3
+          description: "Number of top signals to return."
+      responses:
+        "200":
+          description: "Top signals for the specified ticker."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OptionsSignalItem"
+
+  /v1/{dataset}/{id}:
+    get:
+      summary: "Get a specific item from a dataset"
+      tags:
+        - Datasets
+      parameters:
+        - name: dataset
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "The name of the dataset."
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: "The ID of the item (e.g., a stock symbol)."
+        - name: as_of
+          in: query
+          schema:
+            type: string
+            default: "latest"
+          description: "A date (YYYY-MM-DD) or 'latest'."
+      responses:
+        "200":
+          description: "The requested item."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Item"
+
+components:
+  schemas:
+    DatasetList:
+      type: object
+      properties:
+        datasets:
+          type: array
+          items:
+            type: string
+          example: ["recommendations", "key-levels", "options-signals"]
+
+    OptionsSignalTickerList:
+      type: object
+      properties:
+        dataset:
+          type: string
+          example: "options-signals"
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              href:
+                type: string
+        nextPageToken:
+          type: string
+          nullable: true
+
+    OptionsSignalList:
+      type: object
+      properties:
+        dataset:
+          type: string
+          example: "options-signals-top"
+        as_of:
+          type: string
+          format: date
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Signal"
+
+    OptionsSignalItem:
+      type: object
+      properties:
+        dataset:
+          type: string
+          example: "options-signals-item"
+        id:
+          type: string
+        as_of:
+          type: string
+          format: date
+        selected_expiration_date:
+          type: string
+          format: date
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Signal"
+
+    Signal:
+      type: object
+      properties:
+        run_date:
+          type: string
+          format: date
+        ticker:
+          type: string
+        expiration_date:
+          type: string
+          format: date
+        strike_price:
+          type: number
+        option_type:
+          type: string
+        # ... other fields from the BigQuery table
+
+    Item:
+      type: object
+      properties:
+        dataset:
+          type: string
+        id:
+          type: string
+        as_of:
+          type: string
+          format: "date-time"
+        summary_md:
+          type: string
+          nullable: true
+        artifact_url:
+          type: string
+          format: uri
+        source:
+          type: string
+        disclaimer:
+          type: string
