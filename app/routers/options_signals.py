@@ -22,8 +22,8 @@ def get_latest_run_date() -> str:
         results = query_job.result()
         row = next(results)
         latest_date = row.latest_date
-        if isinstance(latest_date, date):
-            return latest_date.strftime("%Y-%m-%d")
+        if latest_date:
+            return latest_date
         else:
             # Fallback to yesterday if table is empty
             return (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
@@ -143,8 +143,14 @@ def get_top_options_signals(
                 WHEN 'Low' THEN 1
                 ELSE 0
             END DESC,
-            is_trend_aligned DESC,
-            is_iv_favorable DESC
+            CASE stock_price_trend_signal
+                WHEN 'Aligned' THEN 1
+                ELSE 0
+            END DESC,
+            CASE volatility_comparison_signal
+                WHEN 'Favorable' THEN 1
+                ELSE 0
+            END DESC
         LIMIT @limit
     """
     params.append(bigquery.ScalarQueryParameter("limit", "INT64", limit))
@@ -237,8 +243,14 @@ def get_ticker_options_signals(
                 WHEN 'Low' THEN 1
                 ELSE 0
             END DESC,
-            is_trend_aligned DESC,
-            is_iv_favorable DESC
+            CASE stock_price_trend_signal
+                WHEN 'Aligned' THEN 1
+                ELSE 0
+            END DESC,
+            CASE volatility_comparison_signal
+                WHEN 'Favorable' THEN 1
+                ELSE 0
+            END DESC
         LIMIT @top_n
     """
     params.append(bigquery.ScalarQueryParameter("top_n", "INT64", top_n))
