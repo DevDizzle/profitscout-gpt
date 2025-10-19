@@ -87,8 +87,8 @@ def list_options_signals(
     
     try:
         iterator = client.query(
-            query, job_config=job_config, page_size=limit, page_token=pageToken
-        ).result()
+            query, job_config=job_config, page_token=pageToken
+        ).result(page_size=limit)
         
         items = []
         for row in iterator:
