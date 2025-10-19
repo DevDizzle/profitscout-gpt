@@ -106,7 +106,7 @@ def list_options_signals(
         
     except Exception as e:
         logger.error(f"Error querying options signals tickers: {e}")
-        raise HTTPException(status_code=500, detail="Error querying BigQuery for distinct tickers.")
+        raise HTTPException(status_code=500, detail=f"Error querying BigQuery for distinct tickers: {e}")
 
 
 @router.get(
@@ -166,7 +166,7 @@ def get_top_options_signals(
         }
     except Exception as e:
         logger.error(f"Error querying top options signals: {e}")
-        raise HTTPException(status_code=500, detail="Error querying BigQuery for top signals.")
+        raise HTTPException(status_code=500, detail=f"Error querying BigQuery for top signals: {e}")
 
 
 @router.get(
@@ -268,4 +268,4 @@ def get_ticker_options_signals(
         raise e # Re-raise HTTP exceptions
     except Exception as e:
         logger.error(f"Error querying ticker signals for {ticker.upper()}: {e}")
-        raise HTTPException(status_code=500, detail=f"Error querying BigQuery for ticker {ticker.upper()}.")
+        raise HTTPException(status_code=500, detail=f"Error querying BigQuery for ticker {ticker.upper()}: {e}")
