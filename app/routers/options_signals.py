@@ -52,7 +52,6 @@ def list_options_signals(
     ticker: Optional[str] = None,
     option_type: Optional[str] = Query(None, enum=["CALL", "PUT"]),
     limit: int = 100,
-    pageToken: Optional[str] = None,
 ):
     """
     Lists distinct tickers from the options signals dataset.
@@ -86,9 +85,7 @@ def list_options_signals(
     job_config = bigquery.QueryJobConfig(query_parameters=params)
     
     try:
-        iterator = client.query(
-            query, job_config=job_config, page_token=pageToken
-        ).result(page_size=limit)
+        iterator = client.query(query, job_config=job_config).result()
         
         items = []
         for row in iterator:
@@ -100,7 +97,6 @@ def list_options_signals(
         return {
             "dataset": "options-signals",
             "items": items,
-            "nextPageToken": iterator.next_page_token,
         }
         
     except Exception as e:
