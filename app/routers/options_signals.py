@@ -69,7 +69,7 @@ def list_options_signals(
     """
     
     where_clauses = ["run_date = @run_date"]
-    params = [bigquery.ScalarQueryParameter("run_date", "DATE", datetime.strptime(effective_run_date, "%Y-%m-%d").date())]
+    params = [bigquery.ScalarQueryParameter("run_date", "STRING", effective_run_date)]
     
     if ticker:
         where_clauses.append("ticker LIKE @ticker")
@@ -129,7 +129,7 @@ def get_top_options_signals(
         FROM `{TABLE_ID}`
         WHERE run_date = @run_date
     """
-    params = [bigquery.ScalarQueryParameter("run_date", "DATE", datetime.strptime(run_date_str, "%Y-%m-%d").date())]
+    params = [bigquery.ScalarQueryParameter("run_date", "STRING", run_date_str)]
     
     if option_type:
         query += " AND option_type = @option_type"
@@ -190,7 +190,7 @@ def get_ticker_options_signals(
     
     base_query = f" FROM `{TABLE_ID}` WHERE run_date = @run_date AND ticker = @ticker"
     params = [
-        bigquery.ScalarQueryParameter("run_date", "DATE", datetime.strptime(run_date_str, "%Y-%m-%d").date()),
+        bigquery.ScalarQueryParameter("run_date", "STRING", run_date_str),
         bigquery.ScalarQueryParameter("ticker", "STRING", ticker.upper())
     ]
     
@@ -226,7 +226,7 @@ def get_ticker_options_signals(
 
     # Add expiration date to query
     base_query += " AND expiration_date = @expiration_date"
-    params.append(bigquery.ScalarQueryParameter("expiration_date", "DATE", datetime.strptime(final_expiration_date, "%Y-%m-%d").date()))
+    params.append(bigquery.ScalarQueryParameter("expiration_date", "STRING", final_expiration_date))
     
     # Final query to get top signals
     ranking_query = "SELECT *" + base_query + """
