@@ -1,89 +1,122 @@
-# ProfitScout API
+# ProfitScout GCS Glossary
 
-Python-based **FastAPI** backend for the ProfitScout GPT. This API serves AI-driven financial research, pulling stock and options-trading data from **Google Cloud Storage (GCS)** and **BigQuery**.
-
----
-
-## API Overview
-
-This API serves financial data from two primary sources:
-
-- **Google Cloud Storage (GCS):** Provides access to file-based datasets (e.g., `.md`, `.json`) stored in the `profit-scout-data` bucket. Used for datasets like **recommendations**, **technicals**, and **news-analysis**.
-- **Google BigQuery:** Powers “virtual datasets” that are queried live. The primary example is the **options-signals** dataset, which queries the `options_analysis_signals` table in BigQuery.
+This glossary describes the contents and intended use of each folder in the ProfitScout GCS bucket. Use it to choose the right dataset for a user’s question and map intent to API endpoints.
 
 ---
 
-## Available Endpoints
+## Final Recommendations
 
-### General
-
-- `GET /v1`  
-  **Summary:** List all available datasets from both GCS and BigQuery.
-
-### GCS Datasets
-
-- `GET /v1/{dataset}/{id}`  
-  **Summary:** Get a specific item from a GCS dataset (e.g., get recommendations for `AAPL`).  
-  **Parameters:**  
-  - `as_of`: A date (`YYYY-MM-DD`) or `'latest'` (default).
-
-### Options Signals (BigQuery)
-
-- `GET /v1/options-signals`  
-  **Summary:** List distinct tickers that have available options signals.
-
-- `GET /v1/options-signals/top`  
-  **Summary:** Get the top-ranked options signals across all tickers for a given day.
-
-- `GET /v1/options-signals/{ticker}`  
-  **Summary:** Get the top-ranked options signals for a specific ticker.
+### `recommendations/`
+**What it contains:** The final, daily stock-level recommendation aggregating underlying analysis scores. Each ticker has a JSON with scores and a user-facing Markdown summary.  
+**Best for:** “What’s the outlook on TSLA today?”, “Summarize the thesis for AAPL.”, “Bullish or bearish on GOOGL?”  
+**Keys returned:** `outlook_signal`, `weighted_score`, `summary_md`, `artifact_url`.  
+**ID format:** `{TICKER}.json` and `{TICKER}.md` (use `as_of` query param to select date).
 
 ---
 
-## GCS Datasets
+## AI-Generated Analysis & Summaries
 
-- Datasets are represented by top-level folders in the `profit-scout-data` GCS bucket.  
-  For example, the folder `recommendations` corresponds to the **recommendations** dataset.
+### `news-analysis/`
+**What it contains:** Short-term sentiment score and narrative analysis based on the day’s headlines.  
+**Best for:** “Any notable headlines for NVDA today?”, “Quick take on today’s news for META?”  
+**Keys returned:** `score` (0–1), `analysis` (paragraph).  
+**Source data:** `headline-news/`
 
-### Dataset Naming
+### `technicals-analysis/`
+**What it contains:** Narrative score and analysis of the stock’s technical posture (e.g., momentum, trend).  
+**Best for:** “Is momentum bullish or bearish for MSFT over the next 1–3 months?”  
+**Keys returned:** `score` (0–1), `analysis` (paragraph).  
+**Source data:** `technicals/`
 
-- Dataset names should be **lowercase** and contain only **letters**, **numbers**, and **hyphens**.
-- Each dataset folder contains data for different symbols or entities.
+### `transcript-analysis/` or `earnings-call-summaries/`
+**What they contain:** Summaries, key themes, and sentiment extracted from earnings call transcripts.  
+**Best for:** “Summarize the latest earnings call for AMZN.”, “Key quotes/themes from AAPL’s last call?”  
+**Keys returned:** `summary_md`, `key_themes_bullets`, `sentiment_score`, link to raw transcript.  
+**Source data:** `earnings-call-transcripts/`
+
+### `mda-analysis/`
+**What it contains:** Analysis of SEC MD&A sections, focusing on forward-looking statements and risk.  
+**Best for:** “Management’s outlook in the latest 10-K?”, “Key business drivers in MD&A?”  
+**Keys returned:** `score`, `summary`, `identified_risks`.  
+**Source data:** `sec-mda/`
+
+### `fundamentals-analysis/` & `financials-analysis/`
+**What they contain:** AI-generated analysis of financial health, valuation, and growth trends using statements, metrics, and ratios.  
+**Best for:** “Valuation vs 5-year average?”, “Recent margin trends for TSLA?”, “Revenue growth outlook?”  
+**Keys returned:** `score`, `analysis` (paragraph), `valuation_summary`, `growth_summary`.  
+**Source data:** `financial-statements/`, `key-metrics/`, `ratios/`
+
+### `business-summaries/`
+**What it contains:** One-page overview of a company: segments, geographies, competitive moat.  
+**Best for:** “What does Palantir do?”, “Business model for SNOW?”, “Main segments for Disney?”  
+**Source data:** `sec-business/`
 
 ---
 
-## GCS Manifests
+## Raw Data & Inputs
 
-To speed up the resolution of the `"latest"` version of an item, the API **used to** use manifest files.
+### `headline-news/`
+**What it contains:** Curated raw JSON of daily news headlines and snippets per ticker.  
+**Best for:** Retrieving the exact headlines that fed into a given day’s `news-analysis/`.
 
-> **Note:** The current implementation in `app/main.py` appears to use a fallback mechanism by default—listing blobs and sorting them to find the best artifact—rather than relying on manifests. This section is kept for historical context.
+### `technicals/`
+**What it contains:** Time-series of technical indicators per ticker.  
+**Best for:** “Key levels/SMAs/RSI for TSLA today?”, “MACD trend last 30 days.”  
+**Common fields:** `SMA_50`, `SMA_200`, `EMA_21`, `MACD_12_26_9`, `RSI_14`, `ADX_14`, `52w_high`, `52w_low`.  
+**Source data:** `prices/`
 
-### Manifest Format
+### `earnings-call-transcripts/`
+**What it contains:** Raw/lightly formatted quarterly earnings call transcripts.  
+**Best for:** “CEO’s commentary on margins?”, “Find quotes about ‘AI spending’.”
 
-- Manifest files are stored in the `manifests` folder in the GCS bucket.
-- The path to a manifest for a given item is:  
-  `manifests/{dataset}/{id}.json`
+### `financial-statements/`, `key-metrics/`, `ratios/`
+**What they contain:** Point-in-time tables for income statement, balance sheet, cash flow, KPIs (e.g., FCF), and valuation ratios (e.g., P/E).  
+**Best for:** Sourcing raw numbers for fundamentals or custom calcs.
 
-**Example:**
-```json
-{
-  "latest_object": "recommendations/AAL_2025-10-15.md"
-}
-latest_object: The full path to the latest object in the GCS bucket.
+### `sec-business/`, `sec-mda/`, `sec-risk/`
+**What they contain:** Raw text from specific SEC filing sections (10-K, 10-Q).  
+**Best for:** Exact language for deep-dive analyses.
 
-```
+### `prices/`
+**What it contains:** Raw daily OHLCV price data per ticker.  
+**Best for:** Base data for technical and price-chart calculations.
 
-### Fallback Mechanism (Current)
-The API lists all objects for an item in the dataset folder (e.g., recommendations/AAPL*) and selects the best one based on:
+---
 
-The as_of date (if provided),
+## Visualization & UI Assets
 
-Preferred file extensions,
+### `price-chart-json/`
+**What it contains:** Pre-formatted JSON payloads for charting libraries.  
+**Best for:** “Show last 6 months of price candles for GOOGL.”  
+**Source data:** `prices/`
 
-Object update time.
+### `images/`, `pages/`, `dashboards/`
+**What they contain:** Static assets, logos, web pages, and dashboard configs.  
+**Note:** Not typically called directly by the agent.
 
-This assumes a consistent naming convention for files such as:
-{id}_{YYYY-MM-DD}.{ext}
+---
 
-### License
-This project is licensed under the MIT License.
+## Utilities & Internal
+
+### `prep/`
+**What it contains:** Staging area for intermediate/temporary pipeline artifacts.  
+**Note:** Not for direct agent use.
+
+### `tickerlist.txt`
+**What it contains:** Master list of stock tickers covered by ProfitScout.  
+**Best for:** “Which stocks do you cover?”
+
+---
+
+## API Usage Hints (for the Agent)
+
+- Discover datasets: `GET /v1`  
+- List items in a dataset: `GET /v1/{dataset}`  
+- Retrieve latest for a ticker: `GET /v1/{dataset}/{symbol}?as_of=latest`  
+- Prefer the most specific dataset that answers the question:
+  - key levels → `technicals` or `technicals-analysis`  
+  - momentum/technicals → `technicals-analysis`  
+  - broad thesis → `recommendations`  
+  - earnings call context → `earnings-call-transcripts` + `transcript-analysis`  
+- Always include the `as_of` timestamp and “Source: ProfitScout.”  
+- Educational only; not investment advice.
