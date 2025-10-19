@@ -86,10 +86,9 @@ def list_options_signals(
     job_config = bigquery.QueryJobConfig(query_parameters=params)
     
     try:
-        iterator = client.query(query, job_config=job_config).result(
-            page_size=limit,
-            page_token=pageToken
-        )
+        iterator = client.query(
+            query, job_config=job_config, page_size=limit, page_token=pageToken
+        ).result()
         
         items = []
         for row in iterator:
