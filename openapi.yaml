@@ -10,7 +10,7 @@ info:
     `key-metrics`, `ratios`, `headline-news`, `prices`, `price-chart-json`,
     `sec-business`, `sec-mda`, `sec-risk`). The actual list is discovered at runtime via GET /v1.
 servers:
-  - url: https://profitscout-api-2lshkth7qq-uc.a.run.app
+  - url: https://profitscout-api-550651297425.us-central1.run.app
 
 paths:
   /v1:
