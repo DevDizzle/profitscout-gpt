@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 app = FastAPI(title="ProfitScout Generic API", version="1.4.0")
 
 # Include routers
-app.include_router(options_signals.router)
+app.include_router(options_signals.router, prefix="/v1")
 
 # CORS
 app.add_middleware(

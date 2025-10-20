@@ -42,7 +42,7 @@ def map_row_to_dict(row: bigquery.Row) -> Dict[str, Any]:
 # --- Endpoints ---
 
 @router.get(
-    "/v1/options-signals",
+    "/options-signals",
     summary="List distinct tickers for options signals",
     tags=["options-signals"],
 )
@@ -105,7 +105,7 @@ def list_options_signals(
 
 
 @router.get(
-    "/v1/options-signals/top",
+    "/options-signals/top",
     summary="Get top-ranked options signals across all tickers",
     tags=["options-signals"],
 )
@@ -171,7 +171,7 @@ def get_top_options_signals(
 
 
 @router.get(
-    "/v1/options-signals/{ticker}",
+    "/options-signals/{ticker}",
     summary="Get top options signals for a specific ticker",
     tags=["options-signals"],
 )
