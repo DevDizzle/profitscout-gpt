@@ -31,8 +31,9 @@ jobs:
           python -m pytest app/tests
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@v3
         with:
+          project_id: '${{ secrets.GCP_PROJECT_ID }}'
           workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
           service_account: '${{ secrets.GCP_SERVICE_ACCOUNT }}'
 
