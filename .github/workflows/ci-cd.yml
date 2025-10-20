@@ -28,6 +28,7 @@ jobs:
 
       - name: Run Tests
         run: |
+          printenv
           export PYTHONPATH=$PYTHONPATH:./app
           python -m pytest app/tests
 
