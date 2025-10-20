@@ -48,7 +48,7 @@ jobs:
           context: .
           file: ./Dockerfile
           push: true
-          tags: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/profitscout-gpt/profitscout-api:${{ github.sha }}
+          tags: us-central1-docker.pkg.dev/profitscout-lx6bb/profitscout-gpt/profitscout-api:${{ github.sha }}
 
       - name: Deploy to Cloud Run
         uses: google-github-actions/deploy-cloudrun@v2
