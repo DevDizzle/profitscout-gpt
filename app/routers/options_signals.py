@@ -153,21 +153,17 @@ def get_ticker_options_signals(
 
     final_expiration_date = expiration_date
     if not final_expiration_date:
-        dte_query = "SELECT expiration_date FROM " + base_query + \
-                    " AND days_to_expiration BETWEEN 30 AND 45 ORDER BY days_to_expiration ASC LIMIT 1"
+        # Find the first available expiration date
+        dte_query = "SELECT expiration_date FROM " + base_query + " ORDER BY expiration_date ASC LIMIT 1"
+        
         job_config = bigquery.QueryJobConfig(query_parameters=params)
         try:
-            dte_results = list(client.query(dte_query, job_config=job_config).result())
+            dte_job = client.query(dte_query, job_config=job_config)
+            dte_results = list(dte_job.result())
             if dte_results:
-                final_expiration_date = dte_results[0].expiration_date.isoformat()
+                final_expiration_date = dte_results[0].expiration_date
             else:
-                fallback_dte_query = "SELECT expiration_date FROM " + base_query + \
-                                     " ORDER BY ABS(days_to_expiration - 37) ASC LIMIT 1"
-                fallback_results = list(client.query(fallback_dte_query, job_config=job_config).result())
-                if fallback_results:
-                    final_expiration_date = fallback_results[0].expiration_date.isoformat()
-                else:
-                    raise HTTPException(status_code=404, detail=f"No options signals found for ticker {ticker.upper()} on {run_date_str}.")
+                raise HTTPException(status_code=404, detail=f"No options signals found for ticker {ticker.upper()} on {run_date_str}.")
         except Exception as e:
             logger.error(f"Error finding optimal expiration date for {ticker.upper()}: {e}")
             raise HTTPException(status_code=500, detail="Could not determine expiration date.")
