@@ -28,6 +28,7 @@ jobs:
 
       - name: Run Tests
         run: |
+          export PYTHONPATH=$PYTHONPATH:./app
           python -m pytest app/tests
 
       - name: Authenticate to Google Cloud
