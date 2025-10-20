@@ -33,7 +33,7 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v3
         with:
-          project_id: '${{ secrets.GCP_PROJECT_ID }}'
+          project_id: 'profitscout-lx6bb'
           workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
           service_account: '${{ secrets.GCP_SERVICE_ACCOUNT }}'
 
@@ -56,5 +56,5 @@ jobs:
         with:
           service: profitscout-api
           region: us-central1
-          image: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/profitscout-gpt/profitscout-api:${{ github.sha }}
+          image: us-central1-docker.pkg.dev/profitscout-lx6bb/profitscout-gpt/profitscout-api:${{ github.sha }}
           flags: '--allow-unauthenticated'
