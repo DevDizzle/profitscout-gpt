@@ -41,18 +41,14 @@ def test_get_dataset_item_not_found(client):
     assert response.status_code == 404
     assert response.json()["detail"]["error"] == "Item not found."
 
-def test_list_options_signals(client):
+@patch('app.routers.options_signals.get_latest_run_date', return_value="2024-01-01")
+def test_list_options_signals(mock_get_latest_run_date, client):
     """Test the list_options_signals endpoint."""
-    # Mock the return value for get_latest_run_date
-    mock_job_date = MagicMock()
-    mock_job_date.result.return_value = iter([MagicMock(latest_date="2024-01-01")])
-
     # Mock the return value for the main query
     mock_job_tickers = MagicMock()
     mock_job_tickers.result.return_value = iter([MagicMock(ticker='AAPL'), MagicMock(ticker='GOOG')])
 
-    # The first call to query is for the date, the second is for the tickers
-    mock_bq_client.query.side_effect = [mock_job_date, mock_job_tickers]
+    mock_bq_client.query.return_value = mock_job_tickers
 
     response = client.get("/v1/options-signals")
     assert response.status_code == 200
