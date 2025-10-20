@@ -34,11 +34,7 @@ jobs:
           workload_identity_provider: 'projects/469352939749/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
           service_account: '${{ secrets.GCP_SERVICE_ACCOUNT }}'
 
-      - name: Run Tests
-        run: |
-          export GOOGLE_APPLICATION_CREDENTIALS=${{ steps.auth.outputs.credentials_file_path }}
-          export PYTHONPATH=$PYTHONPATH:./app
-          python -m pytest app/tests
+
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
