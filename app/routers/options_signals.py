@@ -126,67 +126,44 @@ def get_top_options_signals(
 
 @router.get(
     "/options-signals/{ticker}",
-    summary="Get top options signals for a specific ticker",
+    summary="Get all options signals for a specific ticker",
     tags=["options-signals"],
 )
 def get_ticker_options_signals(
     ticker: str,
     response: Response,
     as_of: str = "latest",
-    expiration_date: Optional[str] = None,
-    option_type: str = Query("ANY", enum=["CALL", "PUT", "ANY"]),
-    top_n: int = Query(3, alias="top_n"),
     client: bigquery.Client = Depends(get_bigquery_client),
 ):
+    """
+    Retrieves all options signals for a specific ticker for a given date.
+    - `as_of`: 'latest' or a 'YYYY-MM-DD' date.
+    """
     response.headers["Cache-Control"] = "public, max-age=120"
+    
     run_date_str = get_latest_run_date(client) if as_of == "latest" else as_of
     
-    base_query = f" FROM `{TABLE_ID}` WHERE run_date = @run_date AND ticker = @ticker"
+    query = f"SELECT * FROM `{TABLE_ID}` WHERE run_date = @run_date AND ticker = @ticker"
     params = [
         bigquery.ScalarQueryParameter("run_date", "STRING", run_date_str),
         bigquery.ScalarQueryParameter("ticker", "STRING", ticker.upper())
     ]
     
-    if option_type != "ANY":
-        base_query += " AND option_type = @option_type"
-        params.append(bigquery.ScalarQueryParameter("option_type", "STRING", option_type))
-
-    final_expiration_date = expiration_date
-    if not final_expiration_date:
-        # Find the first available expiration date
-        dte_query = "SELECT expiration_date FROM " + base_query + " ORDER BY expiration_date ASC LIMIT 1"
-        
-        job_config = bigquery.QueryJobConfig(query_parameters=params)
-        try:
-            dte_job = client.query(dte_query, job_config=job_config)
-            dte_results = list(dte_job.result())
-            if dte_results:
-                final_expiration_date = dte_results[0].expiration_date
-            else:
-                raise HTTPException(status_code=404, detail=f"No options signals found for ticker {ticker.upper()} on {run_date_str}.")
-        except Exception as e:
-            logger.error(f"Error finding optimal expiration date for {ticker.upper()}: {e}")
-            raise HTTPException(status_code=500, detail="Could not determine expiration date.")
-
-    base_query += " AND expiration_date = @expiration_date"
-    params.append(bigquery.ScalarQueryParameter("expiration_date", "STRING", final_expiration_date))
-    
-    ranking_query = "SELECT *" + base_query + """
-        ORDER BY
-            CASE setup_quality_signal WHEN 'High' THEN 3 WHEN 'Medium' THEN 2 WHEN 'Low' THEN 1 ELSE 0 END DESC,
-            CASE stock_price_trend_signal WHEN 'Aligned' THEN 1 ELSE 0 END DESC,
-            CASE volatility_comparison_signal WHEN 'Favorable' THEN 1 ELSE 0 END DESC
-        LIMIT @top_n
-    """
-    params.append(bigquery.ScalarQueryParameter("top_n", "INT64", top_n))
-    
     job_config = bigquery.QueryJobConfig(query_parameters=params)
+    
     try:
-        query_job = client.query(ranking_query, job_config=job_config)
+        query_job = client.query(query, job_config=job_config)
         results = [map_row_to_dict(row) for row in query_job.result()]
+        
         if not results:
-            raise HTTPException(status_code=404, detail=f"No options signals found for {ticker.upper()} on {run_date_str} with expiration {final_expiration_date}.")
-        return {"dataset": "options-signals-item", "id": ticker.upper(), "as_of": run_date_str, "selected_expiration_date": final_expiration_date, "items": results}
+             raise HTTPException(status_code=404, detail=f"No options signals found for ticker {ticker.upper()} on {run_date_str}.")
+
+        return {
+            "dataset": "options-signals-item",
+            "id": ticker.upper(),
+            "as_of": run_date_str,
+            "items": results
+        }
     except HTTPException as e:
         raise e
     except Exception as e:
