@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Any
 import json
 import logging
 import re
-from app.routers import options_signals
+from routers import options_signals
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
