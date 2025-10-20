@@ -26,18 +26,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r app/requirements.txt
 
-      - name: Run Tests
-        run: |
-          printenv
-          export PYTHONPATH=$PYTHONPATH:./app
-          python -m pytest app/tests
-
       - name: Authenticate to Google Cloud
+        id: auth
         uses: google-github-actions/auth@v3
         with:
           project_id: 'profitscout-lx6bb'
-          workload_identity_provider: 'projects/${{ secrets.GCP_PROJECT_NUMBER }}/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
+          workload_identity_provider: 'projects/469352939749/locations/global/workloadIdentityPools/github-actions-pool/providers/github-actions-provider'
           service_account: '${{ secrets.GCP_SERVICE_ACCOUNT }}'
+
+      - name: Run Tests
+        run: |
+          export GOOGLE_APPLICATION_CREDENTIALS=${{ steps.auth.outputs.credentials_file_path }}
+          export PYTHONPATH=$PYTHONPATH:./app
+          python -m pytest app/tests
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
